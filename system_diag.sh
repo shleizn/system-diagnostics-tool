@@ -46,6 +46,10 @@ mkdir -p "$OUT_DIR"
   dmesg | tail -n 50
   echo
 
+  echo "==== KERNEL LOG ===="
+  journalctl --dmesg --priority=err..alert --lines=50
+  echo
+
   echo "==== SMART (nvme0n1) short ===="
   smartctl -a /dev/nvme0n1 | grep -E "Overall|Percentage|Power_On_Hours|Unsafe_Shutdowns" || echo "smartctl unavailable"
   echo
