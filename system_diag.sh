@@ -7,19 +7,15 @@ OUT_FILE="${OUT_DIR}/diag_${TIMESTAMP}.log"
 mkdir -p "$OUT_DIR"
 
 {
-  echo "==== START SYSTEM DIAGNOSTIC ===="
-  echo
-
-  echo "==== DATE ===="
-  date
+  echo "==== SYSTEM DIAGNOSTIC ($TIMESTAMP) ===="
   echo
 
   echo "==== UPTIME ===="
   uptime
   echo
 
-  echo "==== TOP (snapshot) ===="
-  top -b -n 1 | head -30
+  echo "==== TOP (short) ===="
+  top -b -n 1 | head -15
   echo
 
   echo "==== FREE MEMORY ===="
@@ -27,36 +23,34 @@ mkdir -p "$OUT_DIR"
   echo
 
   echo "==== DISK USAGE ===="
-  df -h
+  df -h | grep -v tmpfs
   echo
 
-  echo "==== IOSTAT ===="
-  iostat -xz 1 1 2>/dev/null || echo "iostat not available"
+  echo "==== IOSTAT (short) ===="
+  iostat -xz 1 1 | head -30 || echo "iostat unavailable"
   echo
 
-  echo "==== IOTOP (5s) ===="
-  iotop -b -n 5 -d 1 2>/dev/null || echo "iotop not available or needs root access"
+  echo "==== IOTOP (top consumers) ===="
+  iotop -b -n 3 -d 1 | head -20 || echo "iotop unavailable"
   echo
 
-  echo "==== DSTAT (5s) ===="
-  dstat -cdngytlm --tcp --udp 5 1 2>/dev/null || echo "dstat not available"
+  echo "==== DSTAT (brief) ===="
+  dstat -cdngytlm 1 1 || echo "dstat unavailable"
   echo
 
-  echo "==== JOURNAL (last 100 lines, priority >= 4) ===="
-  journalctl -p 4 -n 100 --no-pager
+  echo "==== JOURNAL ERRORS (priority >= 3) ===="
+  journalctl -p 3 -n 20 --no-pager || echo "journalctl unavailable"
   echo
 
-  echo "==== DMESG (last 100 lines) ===="
-  dmesg | tail -100
+  echo "==== DMESG (tail 50) ===="
+  dmesg | tail -n 50
   echo
 
-  echo "==== SMART: /dev/nvme0n1 ===="
-  smartctl -a /dev/nvme0n1 2>/dev/null || echo "smartctl failed or not available for /dev/nvme0n1"
+  echo "==== SMART (nvme0n1) short ===="
+  smartctl -a /dev/nvme0n1 | grep -E "Overall|Percentage|Power_On_Hours|Unsafe_Shutdowns" || echo "smartctl unavailable"
   echo
 
-  echo "==== SMART: /dev/sda ===="
-  smartctl -a /dev/sda 2>/dev/null || echo "smartctl failed or not available for /dev/sda"
+  echo "==== SMART (sda) short ===="
+  smartctl -a /dev/sda | grep -E "Reallocated_Sector_Ct|Power_On_Hours|Temperature_Celsius|Offline_Uncorrectable" || echo "smartctl unavailable"
   echo
-
-  echo "==== END ===="
 } > "$OUT_FILE"
